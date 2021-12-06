@@ -125,6 +125,7 @@ def print_total_time(played_episodes_df):
 
 
 def play_latest_episode():
+    THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
     Feed = feedparser.parse(THE_ECONOMIST_RSS_LINK)
     entries = Feed.entries
     all_mp3 = get_all_mp3(entries=entries)
@@ -142,8 +143,6 @@ def play_latest_episode():
     played_episodes_df = save_played_episodes(entries=entries)
     print_total_time(played_episodes_df=played_episodes_df)
 
-
-THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
 
 while True:
     play_latest_episode()
