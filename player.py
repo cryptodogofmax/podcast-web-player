@@ -65,7 +65,7 @@ def update_played_episodes(played_episodes, playing_episode_link):
     open_file = open(PLAYED_EPISODES_PICKLE, "wb")
     pickle.dump(played_episodes, open_file)
     open_file.close()
-    print(f"\nPlayed episodes ({len(played_episodes)}):")
+    print(f"\n{len(played_episodes)} played episodes:")
     print_played_episodes(played_episodes=played_episodes)
 
 
@@ -103,24 +103,44 @@ def save_played_episodes(entries):
     played_episodes_df = all_episodes_df[
         all_episodes_df["MP3 Link"].isin(played_episodes)
     ]
+    played_episodes_df.sort_values(by=["Published Date"])
     played_episodes_df.to_excel("played_theeconomist.xlsx")
+    return played_episodes_df
+
+
+def get_total_seconds(d1):
+    hh, mm, ss = d1.split(":")
+    total_seconds = int(ss) + 60 * int(mm) + 60 * 60 * int(hh)
+    return total_seconds
+
+
+def print_total_time(played_episodes_df):
+    durations = played_episodes_df["Episode Duration"].tolist()
+    seconds_list = [get_total_seconds(d) for d in durations]
+    total_in_seconds = sum(seconds_list)
+    ss = total_in_seconds % 60
+    mm = int((total_in_seconds - ss) / 60 % 60)
+    hh = int((total_in_seconds - ss - 60 * mm) / 3600)
+    print(f"{hh} hours {mm} minutes {ss} seconds")
 
 
 def play_latest_episode():
     Feed = feedparser.parse(THE_ECONOMIST_RSS_LINK)
-    all_mp3 = get_all_mp3(entries=Feed.entries)
+    entries = Feed.entries
+    all_mp3 = get_all_mp3(entries=entries)
     played_episodes = get_played_episodes()
     unplayed_episodes = get_unplayed_episodes(
         played_episodes=played_episodes, all_mp3=all_mp3
     )
     playing_episode_link = unplayed_episodes[0]
     playing(sound=playing_episode_link)
-    print(f"{playing_episode_link} has been played.")
+    print(f"\n{playing_episode_link} has been played.")
     update_played_episodes(
         played_episodes=played_episodes,
         playing_episode_link=playing_episode_link,
     )
-    save_played_episodes(entries=Feed.entries)
+    played_episodes_df = save_played_episodes(entries=entries)
+    print_total_time(played_episodes_df=played_episodes_df)
 
 
 THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
