@@ -3,6 +3,7 @@ import time
 from time import sleep
 
 import feedparser
+import pandas as pd
 import vlc
 from urlvalidator import ValidationError, validate_url
 
@@ -45,8 +46,7 @@ def get_played_episodes():
         open_file.close()
     except:
         played_episodes = []
-    print(f"Played episodes: {len(played_episodes)}")
-    return set(played_episodes)
+    return played_episodes
 
 
 def get_unplayed_episodes(played_episodes, all_mp3):
@@ -54,16 +54,19 @@ def get_unplayed_episodes(played_episodes, all_mp3):
     return unplayed_episodes
 
 
-def update_played_episodes(played_episodes, playing_episdoe_link):
-    played_episodes_set = set(played_episodes)
-    played_episodes_set.add(playing_episdoe_link)
+def print_played_episodes(played_episodes):
+    for episode in played_episodes:
+        print(episode)
+
+
+def update_played_episodes(played_episodes, playing_episode_link):
+    played_episodes.append(playing_episode_link)
     PLAYED_EPISODES_PICKLE = "played_episodes.pkl"
     open_file = open(PLAYED_EPISODES_PICKLE, "wb")
-    played_episodes_list = list(played_episodes_set)
-    print(f"Played episodes: {len(played_episodes_list)}, {played_episodes_list}")
-    pickle.dump(played_episodes_list, open_file)
+    pickle.dump(played_episodes, open_file)
     open_file.close()
-    print(f"Played episodes: {len(played_episodes_set)}")
+    print(f"\nPlayed episodes ({len(played_episodes)}):")
+    print_played_episodes(played_episodes=played_episodes)
 
 
 def playing(sound):
@@ -77,6 +80,32 @@ def playing(sound):
         sleep(1)
 
 
+def get_episode_info(entry0):
+    podcast_links = entry0["links"]
+    mp3_link = get_mp3_from_links(podcast_links)[0]
+    published = entry0["published"]
+    title = entry0["title"]
+    itunes_duration = entry0["itunes_duration"]
+    return [published, title, itunes_duration, mp3_link]
+
+
+def get_table_for_episodes(data):
+    df = pd.DataFrame(
+        data=data, columns=["Published Date", "Title", "Episode Duration", "MP3 Link"]
+    )
+    return df
+
+
+def save_played_episodes(entries):
+    all_episodes = [get_episode_info(entry) for entry in entries]
+    all_episodes_df = get_table_for_episodes(data=all_episodes)
+    played_episodes = get_played_episodes()
+    played_episodes_df = all_episodes_df[
+        all_episodes_df["MP3 Link"].isin(played_episodes)
+    ]
+    played_episodes_df.to_excel("played_theeconomist.xlsx")
+
+
 def play_latest_episode():
     Feed = feedparser.parse(THE_ECONOMIST_RSS_LINK)
     all_mp3 = get_all_mp3(entries=Feed.entries)
@@ -86,14 +115,15 @@ def play_latest_episode():
     )
     playing_episode_link = unplayed_episodes[0]
     playing(sound=playing_episode_link)
-    print(f"This episode has been played.")
+    print(f"{playing_episode_link} has been played.")
     update_played_episodes(
-        played_episodes=[],
-        playing_episdoe_link=playing_episode_link,
+        played_episodes=played_episodes,
+        playing_episode_link=playing_episode_link,
     )
+    save_played_episodes(entries=Feed.entries)
 
 
 THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
 
-# while True:
-play_latest_episode()
+while True:
+    play_latest_episode()
