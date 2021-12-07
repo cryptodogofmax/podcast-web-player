@@ -119,8 +119,11 @@ def save_played_episodes(current_playing):
 
 
 def get_total_seconds(d1):
-    hh, mm, ss = d1.split(":")
-    total_seconds = int(ss) + 60 * int(mm) + 60 * 60 * int(hh)
+    if ":" in d1:
+        hh, mm, ss = d1.split(":")
+        total_seconds = int(ss) + 60 * int(mm) + 60 * 60 * int(hh)
+    else:
+        total_seconds = int(d1)
     return total_seconds
 
 
@@ -134,8 +137,8 @@ def print_total_time(played_episodes_df):
     print(f"\nTotal listening time: {hh} hours {mm} minutes {ss} seconds")
 
 
-def get_mp3_link_the_daily(entry0):
-    links = entry0["links"]
+def get_mp3_link_the_daily(entry):
+    links = entry["links"]
     link = [link for link in links if "audio" in link["type"]]
     mp3_link = ""
     if len(link) == 1:
@@ -143,38 +146,53 @@ def get_mp3_link_the_daily(entry0):
     return mp3_link
 
 
-def get_the_daily_episode_info(entry0):
-    published = entry0["published"]
-    title = entry0["title"]
-    mp3_link = get_mp3_link_the_daily(entry0=entry0)
-    itunes_duration = entry0["itunes_duration"]
+def get_the_daily_episode_info(entry):
+    published = entry["published"]
+    title = entry["title"]
+    mp3_link = get_mp3_link_the_daily(entry=entry)
+    itunes_duration = entry["itunes_duration"]
     return [published, title, itunes_duration, mp3_link]
 
 
-def get_all_episodes_df():
-    N_latest_episodes = 20
+def get_all_data():
+    N_latest_episodes = 5
+    # The Daily
     the_daily_rss_link = "https://feeds.simplecast.com/54nAGcIl"
     Feed_the_daily = feedparser.parse(the_daily_rss_link)
     the_daily_data = [
-        get_the_daily_episode_info(entry0=entry)
+        get_the_daily_episode_info(entry=entry)
         for entry in Feed_the_daily.entries[:N_latest_episodes]
     ]
+    # The NPR Politics Podcast
+    the_npr_politics_rss = "https://feeds.npr.org/510310/podcast.xml"
+    Feed_the_npr_politics = feedparser.parse(the_npr_politics_rss)
+    the_npr_politics_data = [
+        get_the_daily_episode_info(entry=entry)
+        for entry in Feed_the_npr_politics.entries[:N_latest_episodes]
+    ]
+    # The Economist Podcast
     THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
     Feed_the_economist = feedparser.parse(THE_ECONOMIST_RSS_LINK)
     the_economist_data = [
         get_episode_info(entry0=entry)
         for entry in Feed_the_economist.entries[:N_latest_episodes]
     ]
-    total_data = the_daily_data + the_economist_data
+    total_data = the_daily_data + the_economist_data + the_npr_politics_data
+    return total_data
+
+
+def get_all_episodes_df():
+    total_data = get_all_data()
     all_episodes = get_table_for_episodes(data=total_data)
     all_episodes.sort_values(by=["Published Date"])
-    print_in_color(f"All Episodes: \n{all_episodes}")
+    print(f"All Episodes: \n{all_episodes}")
     return all_episodes
 
 
 def get_unplayed_episodes_df(episodes, played_episodes):
     unplayed_episodes_df = episodes[~episodes["MP3 Link"].isin(played_episodes)]
     unplayed_episodes_df.sort_values(by=["Published Date"])
+    print(f"\nUnplayed Episodes: \n{unplayed_episodes_df}")
     return unplayed_episodes_df
 
 
@@ -185,14 +203,12 @@ def play_latest_episode():
         episodes=all_episodes_df, played_episodes=played_episodes
     )
     current_playing = unplayed_episodes_df.head(1)
-    print_in_color(f"\nCurrently Playing: \n{current_playing}")
+    print(f"\nCurrently Playing: \n{current_playing}")
     playing_episode_link = current_playing["MP3 Link"].iloc[0]
     playing_episode_title = current_playing["Title"].iloc[0]
-    print_in_color(
-        f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}"
-    )
+    print(f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}")
     playing(sound=playing_episode_link)
-    print_in_color(f"\nFinished playing: \n{playing_episode_link} has been played.")
+    print(f"\nFinished playing: \n{playing_episode_link} has been played.")
     update_played_episodes(
         played_episodes=played_episodes,
         playing_episode_link=playing_episode_link,
