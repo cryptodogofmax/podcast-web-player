@@ -121,7 +121,7 @@ def print_total_time(played_episodes_df):
     ss = total_in_seconds % 60
     mm = int((total_in_seconds - ss) / 60 % 60)
     hh = int((total_in_seconds - ss - 60 * mm) / 3600)
-    print(f"{hh} hours {mm} minutes {ss} seconds")
+    print(f"Total listening time: {hh} hours {mm} minutes {ss} seconds")
 
 
 def play_latest_episode():
