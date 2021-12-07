@@ -10,9 +10,9 @@ pretty.install()
 
 f = Figlet(font="big")
 
-print_yellow = lambda x: cprint(x, "yellow")
-print_yellow("Max Podcast Player")
-print_yellow(f.renderText("Max Podcast Player"))
+print_in_color = lambda x: cprint(x, "blue")
+print_in_color("Max Podcast Player")
+print_in_color(f.renderText("Max Podcast Player"))
 
 
 import feedparser
