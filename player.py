@@ -134,6 +134,7 @@ def play_latest_episode():
         played_episodes=played_episodes, all_mp3=all_mp3
     )
     playing_episode_link = unplayed_episodes[0]
+    print(f"\nCurrently playing: {playing_episode_link}")
     playing(sound=playing_episode_link)
     print(f"\n{playing_episode_link} has been played.")
     update_played_episodes(
