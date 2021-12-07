@@ -18,6 +18,7 @@ color = list(np.random.choice(range(256), size=3))
 print_in_color = lambda x: cprint(x, "blue", attrs=["bold"])
 print_in_color(emoji.emojize(":headphone: Max Podcast Player :headphone:"))
 print_in_color(f.renderText("Max Podcast Player"))
+COLUMNS = ["Published Date", "Title", "Episode Duration", "MP3 Link"]
 
 
 def get_mp3_from_links(links):
@@ -78,7 +79,7 @@ def update_played_episodes(played_episodes, playing_episode_link):
     pickle.dump(played_episodes, open_file)
     open_file.close()
     print_in_color(f"\n{len(played_episodes)} played episodes:")
-    print_played_episodes(played_episodes=played_episodes)
+    # print_played_episodes(played_episodes=played_episodes)
 
 
 def playing(sound):
@@ -102,22 +103,19 @@ def get_episode_info(entry0):
 
 
 def get_table_for_episodes(data):
-    df = pd.DataFrame(
-        data=data, columns=["Published Date", "Title", "Episode Duration", "MP3 Link"]
-    )
+    df = pd.DataFrame(data=data, columns=COLUMNS)
     return df
 
 
-def save_played_episodes():
-    all_episodes_df = get_all_episodes_df()
-    played_episodes = get_played_episodes()
-    played_episodes_df = all_episodes_df[
-        all_episodes_df["MP3 Link"].isin(played_episodes)
-    ]
-    played_episodes_df.sort_values(by=["Published Date"])
-    played_episodes_df.to_excel("played_theeconomist.xlsx")
-    print_in_color(played_episodes_df)
-    return played_episodes_df
+def save_played_episodes(current_playing):
+    played_in_excel = pd.read_excel("played_theeconomist.xlsx", engine="openpyxl")
+    played_in_excel = played_in_excel[COLUMNS]
+    current_playing = current_playing[COLUMNS]
+    played_in_excel.append(current_playing, ignore_index=True)
+    played_in_excel.sort_values(by=["Published Date"])
+    played_in_excel.to_excel("played_theeconomist.xlsx")
+    print_in_color(f"Played Episodes: \n{played_in_excel}")
+    return played_in_excel
 
 
 def get_total_seconds(d1):
@@ -133,7 +131,7 @@ def print_total_time(played_episodes_df):
     ss = total_in_seconds % 60
     mm = int((total_in_seconds - ss) / 60 % 60)
     hh = int((total_in_seconds - ss - 60 * mm) / 3600)
-    print_in_color(f"\nTotal listening time: {hh} hours {mm} minutes {ss} seconds")
+    print(f"\nTotal listening time: {hh} hours {mm} minutes {ss} seconds")
 
 
 def get_mp3_link_the_daily(entry0):
@@ -154,20 +152,24 @@ def get_the_daily_episode_info(entry0):
 
 
 def get_all_episodes_df():
+    N_latest_episodes = 20
     the_daily_rss_link = "https://feeds.simplecast.com/54nAGcIl"
     Feed_the_daily = feedparser.parse(the_daily_rss_link)
     the_daily_data = [
-        get_the_daily_episode_info(entry0=entry) for entry in Feed_the_daily.entries
+        get_the_daily_episode_info(entry0=entry)
+        for entry in Feed_the_daily.entries[:N_latest_episodes]
     ]
     THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
     Feed_the_economist = feedparser.parse(THE_ECONOMIST_RSS_LINK)
     the_economist_data = [
-        get_episode_info(entry0=entry) for entry in Feed_the_economist.entries
+        get_episode_info(entry0=entry)
+        for entry in Feed_the_economist.entries[:N_latest_episodes]
     ]
     total_data = the_daily_data + the_economist_data
-    episodes = get_table_for_episodes(data=total_data)
-    episodes.sort_values(by=["Published Date"])
-    return episodes
+    all_episodes = get_table_for_episodes(data=total_data)
+    all_episodes.sort_values(by=["Published Date"])
+    print_in_color(f"All Episodes: \n{all_episodes}")
+    return all_episodes
 
 
 def get_unplayed_episodes_df(episodes, played_episodes):
@@ -182,18 +184,20 @@ def play_latest_episode():
     unplayed_episodes_df = get_unplayed_episodes_df(
         episodes=all_episodes_df, played_episodes=played_episodes
     )
-    playing_episode_link = unplayed_episodes_df["MP3 Link"].iloc[0]
-    playing_episode_title = unplayed_episodes_df["Title"].iloc[0]
+    current_playing = unplayed_episodes_df.head(1)
+    print_in_color(f"\nCurrently Playing: \n{current_playing}")
+    playing_episode_link = current_playing["MP3 Link"].iloc[0]
+    playing_episode_title = current_playing["Title"].iloc[0]
     print_in_color(
         f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}"
     )
     playing(sound=playing_episode_link)
-    print_in_color(f"\n{playing_episode_link} has been played.")
+    print_in_color(f"\nFinished playing: \n{playing_episode_link} has been played.")
     update_played_episodes(
         played_episodes=played_episodes,
         playing_episode_link=playing_episode_link,
     )
-    played_episodes_df = save_played_episodes()
+    played_episodes_df = save_played_episodes(current_playing=current_playing)
     print_total_time(played_episodes_df=played_episodes_df)
 
 
