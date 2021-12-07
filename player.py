@@ -2,23 +2,22 @@ import pickle
 import time
 from time import sleep
 
+import emoji
+import feedparser
+import numpy as np
+import pandas as pd
+import vlc
 from pyfiglet import Figlet
 from rich import pretty, print
 from termcolor import colored, cprint
+from urlvalidator import ValidationError, validate_url
 
 pretty.install()
-
-f = Figlet(font="big")
-
-print_in_color = lambda x: cprint(x, "blue")
-print_in_color("Max Podcast Player")
+f = Figlet(font="ntgreek")
+color = list(np.random.choice(range(256), size=3))
+print_in_color = lambda x: cprint(x, "blue", "on_white", attrs=["bold"])
+print_in_color(emoji.emojize(":headphone: Max Podcast Player :headphone:"))
 print_in_color(f.renderText("Max Podcast Player"))
-
-
-import feedparser
-import pandas as pd
-import vlc
-from urlvalidator import ValidationError, validate_url
 
 
 def get_mp3_from_links(links):
