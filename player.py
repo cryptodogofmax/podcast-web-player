@@ -2,6 +2,19 @@ import pickle
 import time
 from time import sleep
 
+from pyfiglet import Figlet
+from rich import pretty, print
+from termcolor import colored, cprint
+
+pretty.install()
+
+f = Figlet(font="big")
+
+print_yellow = lambda x: cprint(x, "yellow")
+print_yellow("Max Podcast Player")
+print_yellow(f.renderText("Max Podcast Player"))
+
+
 import feedparser
 import pandas as pd
 import vlc
