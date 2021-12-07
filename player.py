@@ -13,9 +13,9 @@ from termcolor import colored, cprint
 from urlvalidator import ValidationError, validate_url
 
 pretty.install()
-f = Figlet(font="ntgreek")
+f = Figlet(font="mini")
 color = list(np.random.choice(range(256), size=3))
-print_in_color = lambda x: cprint(x, "blue", "on_white", attrs=["bold"])
+print_in_color = lambda x: cprint(x, "blue", attrs=["bold"])
 print_in_color(emoji.emojize(":headphone: Max Podcast Player :headphone:"))
 print_in_color(f.renderText("Max Podcast Player"))
 
@@ -68,7 +68,7 @@ def get_unplayed_episodes(played_episodes, all_mp3):
 
 def print_played_episodes(played_episodes):
     for episode in played_episodes:
-        print(episode)
+        print_in_color(episode)
 
 
 def update_played_episodes(played_episodes, playing_episode_link):
@@ -77,7 +77,7 @@ def update_played_episodes(played_episodes, playing_episode_link):
     open_file = open(PLAYED_EPISODES_PICKLE, "wb")
     pickle.dump(played_episodes, open_file)
     open_file.close()
-    print(f"\n{len(played_episodes)} played episodes:")
+    print_in_color(f"\n{len(played_episodes)} played episodes:")
     print_played_episodes(played_episodes=played_episodes)
 
 
@@ -87,7 +87,7 @@ def playing(sound):
     media = vlc_instance.media_new(sound)
     player.set_media(media)
     player.play()
-    sleep(5)  # Or however long you expect it to take to open vlc
+    sleep(15)  # Or however long you expect it to take to open vlc
     while player.is_playing():
         sleep(1)
 
@@ -108,15 +108,15 @@ def get_table_for_episodes(data):
     return df
 
 
-def save_played_episodes(entries):
-    all_episodes = [get_episode_info(entry) for entry in entries]
-    all_episodes_df = get_table_for_episodes(data=all_episodes)
+def save_played_episodes():
+    all_episodes_df = get_all_episodes_df()
     played_episodes = get_played_episodes()
     played_episodes_df = all_episodes_df[
         all_episodes_df["MP3 Link"].isin(played_episodes)
     ]
     played_episodes_df.sort_values(by=["Published Date"])
     played_episodes_df.to_excel("played_theeconomist.xlsx")
+    print_in_color(played_episodes_df)
     return played_episodes_df
 
 
@@ -133,27 +133,67 @@ def print_total_time(played_episodes_df):
     ss = total_in_seconds % 60
     mm = int((total_in_seconds - ss) / 60 % 60)
     hh = int((total_in_seconds - ss - 60 * mm) / 3600)
-    print(f"Total listening time: {hh} hours {mm} minutes {ss} seconds")
+    print_in_color(f"\nTotal listening time: {hh} hours {mm} minutes {ss} seconds")
+
+
+def get_mp3_link_the_daily(entry0):
+    links = entry0["links"]
+    link = [link for link in links if "audio" in link["type"]]
+    mp3_link = ""
+    if len(link) == 1:
+        mp3_link = link[0]["href"]
+    return mp3_link
+
+
+def get_the_daily_episode_info(entry0):
+    published = entry0["published"]
+    title = entry0["title"]
+    mp3_link = get_mp3_link_the_daily(entry0=entry0)
+    itunes_duration = entry0["itunes_duration"]
+    return [published, title, itunes_duration, mp3_link]
+
+
+def get_all_episodes_df():
+    the_daily_rss_link = "https://feeds.simplecast.com/54nAGcIl"
+    Feed_the_daily = feedparser.parse(the_daily_rss_link)
+    the_daily_data = [
+        get_the_daily_episode_info(entry0=entry) for entry in Feed_the_daily.entries
+    ]
+    THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
+    Feed_the_economist = feedparser.parse(THE_ECONOMIST_RSS_LINK)
+    the_economist_data = [
+        get_episode_info(entry0=entry) for entry in Feed_the_economist.entries
+    ]
+    total_data = the_daily_data + the_economist_data
+    episodes = get_table_for_episodes(data=total_data)
+    episodes.sort_values(by=["Published Date"])
+    return episodes
+
+
+def get_unplayed_episodes_df(episodes, played_episodes):
+    unplayed_episodes_df = episodes[~episodes["MP3 Link"].isin(played_episodes)]
+    unplayed_episodes_df.sort_values(by=["Published Date"])
+    return unplayed_episodes_df
 
 
 def play_latest_episode():
-    THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
-    Feed = feedparser.parse(THE_ECONOMIST_RSS_LINK)
-    entries = Feed.entries
-    all_mp3 = get_all_mp3(entries=entries)
+    all_episodes_df = get_all_episodes_df()
     played_episodes = get_played_episodes()
-    unplayed_episodes = get_unplayed_episodes(
-        played_episodes=played_episodes, all_mp3=all_mp3
+    unplayed_episodes_df = get_unplayed_episodes_df(
+        episodes=all_episodes_df, played_episodes=played_episodes
     )
-    playing_episode_link = unplayed_episodes[0]
-    print(f"\nCurrently playing: {playing_episode_link}")
+    playing_episode_link = unplayed_episodes_df["MP3 Link"].iloc[0]
+    playing_episode_title = unplayed_episodes_df["Title"].iloc[0]
+    print_in_color(
+        f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}"
+    )
     playing(sound=playing_episode_link)
-    print(f"\n{playing_episode_link} has been played.")
+    print_in_color(f"\n{playing_episode_link} has been played.")
     update_played_episodes(
         played_episodes=played_episodes,
         playing_episode_link=playing_episode_link,
     )
-    played_episodes_df = save_played_episodes(entries=entries)
+    played_episodes_df = save_played_episodes()
     print_total_time(played_episodes_df=played_episodes_df)
 
 
