@@ -25,6 +25,20 @@ the_bankless_rss = "http://podcast.banklesshq.com/rss"
 the_daily_rss_link = "https://feeds.simplecast.com/54nAGcIl"
 the_npr_politics_rss = "https://feeds.npr.org/510310/podcast.xml"
 THE_ECONOMIST_RSS_LINK = "https://rss.acast.com/theeconomistallaudio"
+the_sheng_espresso_rss = "https://feeds.fireside.fm/sheng-espresso/rss"
+the_contrary_rss = "https://onthecontrary.libsyn.com/rss"
+the_failure_rss = "https://anchor.fm/s/60d69380/podcast/rss"
+the_3_things_rss = "https://www.spreaker.com/show/5008053/episodes/feed"
+podcast_channels = [
+    the_bankless_rss,
+    the_daily_rss_link,
+    the_npr_politics_rss,
+    THE_ECONOMIST_RSS_LINK,
+    the_sheng_espresso_rss,
+    the_contrary_rss,
+    the_failure_rss,
+    the_3_things_rss,
+]
 
 
 def get_mp3_link_from_feed_entry(entry):
@@ -66,36 +80,20 @@ def get_played_episodes_filtering_rss_feed(rss_link, played_episodes_list):
 
 
 def get_played_episodes_data_from_rss(played_episodes_list):
-    the_daily_played_data = get_played_episodes_filtering_rss_feed(
-        rss_link=the_daily_rss_link, played_episodes_list=played_episodes_list
-    )
-    the_bankless_played_data = get_played_episodes_filtering_rss_feed(
-        rss_link=the_bankless_rss, played_episodes_list=played_episodes_list
-    )
-    the_economist_played_data = get_played_episodes_filtering_rss_feed(
-        rss_link=THE_ECONOMIST_RSS_LINK, played_episodes_list=played_episodes_list
-    )
-    the_npr_played_data = get_played_episodes_filtering_rss_feed(
-        rss_link=the_npr_politics_rss, played_episodes_list=played_episodes_list
-    )
     total_played_data = []
-    total_played_data += the_daily_played_data
-    total_played_data += the_bankless_played_data
-    total_played_data += the_economist_played_data
-    total_played_data += the_npr_played_data
+    for rss in podcast_channels:
+        data = get_played_episodes_filtering_rss_feed(
+            rss_link=rss, played_episodes_list=played_episodes_list
+        )
+        total_played_data += data
     return total_played_data
 
 
 def get_all_data_from_rss():
-    the_daily_data = get_data_from_rss(rss_link=the_daily_rss_link, top_N=101)
-    the_npr_politics_data = get_data_from_rss(rss_link=the_npr_politics_rss, top_N=101)
-    the_economist_data = get_data_from_rss(rss_link=THE_ECONOMIST_RSS_LINK, top_N=101)
-    the_bankless_data = get_data_from_rss(rss_link=the_bankless_rss, top_N=101)
     total_data = []
-    total_data += the_daily_data
-    total_data += the_economist_data
-    total_data += the_npr_politics_data
-    total_data += the_bankless_data
+    for rss in podcast_channels:
+        data = get_data_from_rss(rss_link=rss, top_N=101)
+        total_data += data
     return total_data
 
 
@@ -237,23 +235,23 @@ def get_table_for_episodes(data):
 
 def get_total_seconds(d1):
     if ":" in d1:
-        hh, mm, ss = d1.split(":")
-        total_seconds = int(ss) + 60 * int(mm) + 60 * 60 * int(hh)
+        t = d1.split(":")
+        if len(t) == 3:
+            hh, mm, ss = t
+            total_seconds = int(ss) + 60 * int(mm) + 60 * 60 * int(hh)
+        elif len(t) == 2:
+            mm, ss = t
+            total_seconds = int(ss) + 60 * int(mm)
     else:
         total_seconds = int(d1)
     return total_seconds
 
 
 def get_topN_episodes_data_from_all_rss(topN=5):
-    the_daily_data = get_data_from_rss(rss_link=the_daily_rss_link, top_N=topN)
-    the_npr_politics_data = get_data_from_rss(rss_link=the_npr_politics_rss, top_N=topN)
-    the_economist_data = get_data_from_rss(rss_link=THE_ECONOMIST_RSS_LINK, top_N=topN)
-    the_bankless_data = get_data_from_rss(rss_link=the_bankless_rss, top_N=topN)
     total_data = []
-    total_data += the_daily_data
-    total_data += the_economist_data
-    total_data += the_npr_politics_data
-    total_data += the_bankless_data
+    for rss in podcast_channels:
+        data = get_data_from_rss(rss_link=rss, top_N=topN)
+        total_data += data
     return total_data
 
 
@@ -282,20 +280,25 @@ def play_latest_episode():
     unplayed_episodes_df = get_unplayed_episodes_df(
         episodes=all_episodes_df, played_episodes_list=played_episodes_list
     )
-    current_playing = unplayed_episodes_df.head(1)
-    print(f"\nCurrently Playing: \n{current_playing}")
-    playing_episode_link = current_playing["MP3 Link"].iloc[0]
-    playing_episode_title = current_playing["Title"].iloc[0]
-    print(f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}")
-    playing(sound=playing_episode_link)
-    print(f"\nFinished playing: \n{playing_episode_link} has been played.")
-    update_played_episodes_list_to_pickle(
-        played_episodes=played_episodes_list,
-        playing_episode_link=playing_episode_link,
-    )
-    played_episodes_df = save_played_to_excel()
-    print_total_time(played_episodes_df=played_episodes_df)
+    if len(unplayed_episodes_df) > 0:
+        current_playing = unplayed_episodes_df.head(1)
+        print(f"\nCurrently Playing: \n{current_playing}")
+        playing_episode_link = current_playing["MP3 Link"].iloc[0]
+        playing_episode_title = current_playing["Title"].iloc[0]
+        print(
+            f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}"
+        )
+        playing(sound=playing_episode_link)
+        print(f"\nFinished playing: \n{playing_episode_link} has been played.")
+        update_played_episodes_list_to_pickle(
+            played_episodes=played_episodes_list,
+            playing_episode_link=playing_episode_link,
+        )
+        played_episodes_df = save_played_to_excel()
+        print_total_time(played_episodes_df=played_episodes_df)
+    return unplayed_episodes_df
 
 
-while True:
+unplayed_episodes_df = play_latest_episode()
+while len(unplayed_episodes_df) > 0:
     play_latest_episode()
