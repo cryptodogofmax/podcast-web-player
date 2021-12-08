@@ -7,6 +7,7 @@ import feedparser
 import numpy as np
 import pandas as pd
 import vlc
+from dateutil import parser
 from pyfiglet import Figlet
 from rich import pretty, print
 from termcolor import colored, cprint
@@ -114,7 +115,7 @@ def save_played_episodes(current_playing):
     played_in_excel.append(current_playing, ignore_index=True)
     played_in_excel.sort_values(by=["Published Date"])
     played_in_excel.to_excel("played_theeconomist.xlsx")
-    print_in_color(f"Played Episodes: \n{played_in_excel}")
+    print(f"Played Episodes: \n{played_in_excel}")
     return played_in_excel
 
 
@@ -184,15 +185,20 @@ def get_all_data():
 def get_all_episodes_df():
     total_data = get_all_data()
     all_episodes = get_table_for_episodes(data=total_data)
-    all_episodes.sort_values(by=["Published Date"])
+    all_episodes["Published Date"] = all_episodes["Published Date"].apply(parser.parse)
+    all_episodes = all_episodes.sort_values(by=["Published Date"], ascending=False)
     print(f"All Episodes: \n{all_episodes}")
     return all_episodes
 
 
 def get_unplayed_episodes_df(episodes, played_episodes):
     unplayed_episodes_df = episodes[~episodes["MP3 Link"].isin(played_episodes)]
-    unplayed_episodes_df.sort_values(by=["Published Date"])
+    unplayed_episodes_df = unplayed_episodes_df.sort_values(
+        by=["Published Date"], ascending=False
+    )
     print(f"\nUnplayed Episodes: \n{unplayed_episodes_df}")
+    print_in_color("Total time to listen: ")
+    print_total_time(played_episodes_df=unplayed_episodes_df)
     return unplayed_episodes_df
 
 
