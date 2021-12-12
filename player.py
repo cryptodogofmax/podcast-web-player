@@ -32,6 +32,11 @@ the_contrary_rss = "https://onthecontrary.libsyn.com/rss"
 the_failure_rss = "https://anchor.fm/s/60d69380/podcast/rss"
 the_3_things_rss = "https://www.spreaker.com/show/5008053/episodes/feed"
 the_lunhuan_rss = "https://lunhuan.typlog.io/episodes/feed.xml"
+the_hbr_rss = "http://feeds.harvardbusiness.org/harvardbusiness/ideacast"
+the_exponential_rss = (
+    "http://feeds.harvardbusiness.org/harvardbusiness/exponential-view"
+)
+# podcast_channels = [the_hbr_rss, the_exponential_rss]
 podcast_channels = [
     the_bankless_rss,
     the_daily_rss_link,
@@ -42,6 +47,8 @@ podcast_channels = [
     the_failure_rss,
     the_3_things_rss,
     the_lunhuan_rss,
+    the_hbr_rss,
+    the_exponential_rss,
 ]
 
 
