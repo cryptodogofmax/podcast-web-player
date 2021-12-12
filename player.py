@@ -14,6 +14,8 @@ from tabulate import tabulate
 from termcolor import colored, cprint
 from urlvalidator import ValidationError, validate_url
 
+# pd.options.display.max_rows = None
+
 pretty.install()
 f = Figlet(font="mini")
 color = list(np.random.choice(range(256), size=3))
@@ -29,6 +31,7 @@ the_sheng_espresso_rss = "https://feeds.fireside.fm/sheng-espresso/rss"
 the_contrary_rss = "https://onthecontrary.libsyn.com/rss"
 the_failure_rss = "https://anchor.fm/s/60d69380/podcast/rss"
 the_3_things_rss = "https://www.spreaker.com/show/5008053/episodes/feed"
+the_lunhuan_rss = "https://lunhuan.typlog.io/episodes/feed.xml"
 podcast_channels = [
     the_bankless_rss,
     the_daily_rss_link,
@@ -38,6 +41,7 @@ podcast_channels = [
     the_contrary_rss,
     the_failure_rss,
     the_3_things_rss,
+    the_lunhuan_rss,
 ]
 
 
@@ -140,7 +144,7 @@ def save_played_to_excel():
         lambda t: pd.to_datetime(t).date()
     )
     played_episodes_df.to_excel("played_theeconomist.xlsx")
-    print(f"\nPlayed Episodes: \n{played_episodes_df}\n")
+    print_in_color(f"\nPlayed Episodes: \n{played_episodes_df}\n")
     print_total_time(played_episodes_df=played_episodes_df)
     return played_episodes_df
 
@@ -198,18 +202,20 @@ def print_played_episodes(played_episodes):
 
 def update_played_episodes_list_to_pickle(played_episodes, playing_episode_link):
     played_episodes.append(playing_episode_link)
+    played_episodes_set = set(played_episodes)
+    played_episodes = list(played_episodes_set)
     PLAYED_EPISODES_PICKLE = "played_episodes.pkl"
     open_file = open(PLAYED_EPISODES_PICKLE, "wb")
     pickle.dump(played_episodes, open_file)
     open_file.close()
     print_in_color(f"\n{len(played_episodes)} played episodes:")
-    # print_played_episodes(played_episodes=played_episodes)
+    print_played_episodes(played_episodes=played_episodes)
 
 
-def playing(sound):
+def playing(audio_link):
     vlc_instance = vlc.Instance()
     player = vlc_instance.media_player_new()
-    media = vlc_instance.media_new(sound)
+    media = vlc_instance.media_new(audio_link)
     player.set_media(media)
     player.play()
     sleep(15)  # Or however long you expect it to take to open vlc
@@ -288,7 +294,7 @@ def play_latest_episode():
         print(
             f"\nCurrently playing: \n{playing_episode_title} \n{playing_episode_link}"
         )
-        playing(sound=playing_episode_link)
+        playing(audio_link=playing_episode_link)
         print(f"\nFinished playing: \n{playing_episode_link} has been played.")
         update_played_episodes_list_to_pickle(
             played_episodes=played_episodes_list,
@@ -299,6 +305,10 @@ def play_latest_episode():
     return unplayed_episodes_df
 
 
-unplayed_episodes_df = play_latest_episode()
-while len(unplayed_episodes_df) > 0:
-    play_latest_episode()
+def run():
+    unplayed_episodes_df = play_latest_episode()
+    while len(unplayed_episodes_df) > 0:
+        play_latest_episode()
+
+
+run()
